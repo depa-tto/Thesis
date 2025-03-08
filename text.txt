@@ -1,0 +1,20 @@
+Siccome mi interessa studiare l'effetto del numero di variabili(per via di pca,tsne e umap) ha senso che il numero di osservazioni
+sia proporzionato al numero di variabili. Quindi 5000 osservazioni e 10 variabili e 10 000 osservazioni e 20 variabili, così che
+il rapporto osservazioni/variabili sia uguale per entrambi i dataset e l'influenza sulla accuracy dei cluster dipenda solamente
+dal numero di variabili. Si creeranno così 3 tabelle differenti, in cui la correlazione varia: 0.2 - 0.5 - 0.8, la varianza varia:
+5 - 10 - 15 e il numero di cluster varia: 3 - 5 - 7.
+
+
+### UPDATE ###
+
+
+0.8 correlazione e 3 varianza ---> DATASET CORRELATO
+
+0.5 correlazione e 6 varianza ---> DATASET MEDIAMENTE CORRELATO
+
+0.2 correlazione e 9 varianza ---> DATASET NON CORRELLATO
+
+3 - 5 - 7 cluster
+
+10 variabili e 5000 osservazioni - 20 variabili e 10 000 osservazioni 
+

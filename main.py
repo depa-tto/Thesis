@@ -3,7 +3,7 @@ from sklearn.datasets import make_blobs
 
 class CorrelatedClusterGenerator:
     def __init__(
-        self, n_samples, n_features, n_clusters, correlation=0.5, random_state=None
+        self, n_samples, n_features, n_clusters, cluster_std, correlation=0.5, random_state=None
     ):
         """
         Initialize the parameters for generating correlated clusters.
@@ -20,6 +20,7 @@ class CorrelatedClusterGenerator:
         self.n_clusters = n_clusters
         self.correlation = correlation
         self.random_state = random_state
+        self.cluster_std = cluster_std
 
     def generate_clusters(self):
         """
@@ -37,6 +38,7 @@ class CorrelatedClusterGenerator:
             centers=self.n_clusters,
             n_features=self.n_features,
             random_state=self.random_state,
+            cluster_std=self.cluster_std
         )
 
         # Calculate the centers of the clusters
@@ -49,8 +51,10 @@ class CorrelatedClusterGenerator:
 
         # Generate correlated samples for each cluster
         for i, center in enumerate(centers):
-            cov_matrix = np.full((self.n_features, self.n_features), self.correlation)
-            np.fill_diagonal(cov_matrix, 1)
+            std = self.cluster_std[i] if isinstance(self.cluster_std, (list, np.ndarray)) else self.cluster_std
+
+            cov_matrix = np.full((self.n_features, self.n_features), self.correlation * std**2)
+            np.fill_diagonal(cov_matrix, std**2)
 
             cluster_samples = np.random.multivariate_normal(
                 mean=center, cov=cov_matrix, size=self.n_samples // self.n_clusters
@@ -58,6 +62,7 @@ class CorrelatedClusterGenerator:
 
             X.append(cluster_samples)
             y.append(np.full(self.n_samples // self.n_clusters, i))
+
 
         # Stack the cluster samples and labels
         X = np.vstack(X)

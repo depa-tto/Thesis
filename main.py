@@ -1,5 +1,5 @@
 import numpy as np
-
+from sklearn.datasets import make_spd_matrix
 class CorrelatedClusterGenerator:
     """
     A generator for synthetic datasets with correlated features and well-separated clusters.
@@ -46,13 +46,13 @@ class CorrelatedClusterGenerator:
                                      expressed as multiple of standard deviation
             random_state (int): Seed for random number generator for reproducibility
         """
-        self.n_samples = n_samples              # Store total number of samples
-        self.n_features = n_features            # Store feature dimensionality
-        self.n_clusters = n_clusters            # Store number of clusters
-        self.cluster_std = cluster_std          # Store standard deviation configuration
-        self.correlation = correlation          # Store correlation level
+        self.n_samples = n_samples                  # Store total number of samples
+        self.n_features = n_features                # Store feature dimensionality
+        self.n_clusters = n_clusters                # Store number of clusters
+        self.cluster_std = cluster_std              # Store standard deviation configuration
+        self.correlation = correlation              # Store correlation level
         self.separation_factor = separation_factor  # Store separation factor
-        self.random_state = random_state        # Store random seed
+        self.random_state = random_state            # Store random seed
 
     def generate_clusters(self):
         """
@@ -95,7 +95,7 @@ class CorrelatedClusterGenerator:
 
             # Generate multivariate normal samples around the cluster center
             cluster_samples = np.random.multivariate_normal(
-                mean=center,                    # Center point for this cluster
+                mean=center,                   # Center point for this cluster
                 cov=cov_matrix,                # Covariance matrix with correlations
                 size=n_samples_cluster         # Number of samples for this cluster
             )
@@ -141,6 +141,13 @@ class CorrelatedClusterGenerator:
         This method ensures that clusters are well-separated in the feature space
         by enforcing a minimum distance between any two cluster centers. The minimum
         distance is calculated as separation_factor * maximum_standard_deviation.
+        If cluster centers were generated too close to each other (especially 
+        if the standard deviation was large), the clusters would randomly overlap. 
+        In this case, any clustering algorithm would fail, and you wouldn't know whether
+        the failure was due to the algorithm itself or poor data quality.
+
+        With Guarantee: By ensuring a minimum distance we are defining a clear ground truth. 
+        ensuring thar the clusters are separable in high dimension
         
         Returns:
             ndarray: Array of cluster centers with shape (n_clusters, n_features)
@@ -200,14 +207,12 @@ class CorrelatedClusterGenerator:
         Returns:
             ndarray: Covariance matrix of shape (n_features, n_features)
         """
-        # Import sklearn function for generating valid covariance matrices
-        from sklearn.datasets import make_spd_matrix
 
         try:
             # Generate a random positive semi-definite matrix
             # This guarantees the matrix will be mathematically valid
             base_cov = make_spd_matrix(
-                n_dim=self.n_features,      # Dimensionality of the matrix
+                n_dim=self.n_features,          # Dimensionality of the matrix
                 random_state=self.random_state  # Use same random seed for reproducibility
             )
 
@@ -221,7 +226,7 @@ class CorrelatedClusterGenerator:
 
             # Determine the correlation scaling factor
             if isinstance(self.correlation, (int, float)):
-                corr_factor = self.correlation      # Use single correlation value
+                corr_factor = self.correlation           # Use single correlation value
             else:
                 corr_factor = np.mean(self.correlation)  # Use average if range given
 

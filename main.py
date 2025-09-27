@@ -1,4 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
 from sklearn.datasets import make_spd_matrix
 class CorrelatedClusterGenerator:
     """
@@ -281,3 +285,91 @@ class CorrelatedClusterGenerator:
         return samples_per_cluster
 
 
+def trimmed_clustering(X, n_clusters, trim_fraction=0.1, max_iter=100, tol=1e-4, random_state=42):
+    """
+    Implementation of trimmed k-means clustering.
+    
+    This algorithm iteratively assigns points to the nearest cluster centers,
+    discards a fraction of farthest points as outliers, and updates the centroids.
+    """
+    rng = np.random.default_rng(random_state)
+
+    # Random initialization of cluster centers
+    init_idx = rng.choice(len(X), size=n_clusters, replace=False)
+    centroids = X[init_idx]
+    prev_centroids = None
+
+    for _ in range(max_iter):
+        # Compute distances to centroids
+        distances = np.linalg.norm(X[:, None] - centroids[None, :], axis=2)
+        labels = np.argmin(distances, axis=1)
+        min_distances = distances[np.arange(len(X)), labels]
+
+        # Identify points to trim (outliers)
+        threshold = np.percentile(min_distances, 100 * (1 - trim_fraction))
+        mask = min_distances <= threshold
+
+        # Update centroids using only trimmed points
+        new_centroids = []
+        for k in range(n_clusters):
+            cluster_points = X[mask & (labels == k)]
+            if len(cluster_points) > 0:
+                new_centroids.append(cluster_points.mean(axis=0))
+            else:
+                new_centroids.append(X[rng.choice(len(X))])
+        new_centroids = np.vstack(new_centroids)
+
+        # Check convergence
+        if prev_centroids is not None and np.allclose(new_centroids, prev_centroids, atol=tol):
+            break
+
+        prev_centroids = centroids
+        centroids = new_centroids
+
+    # Fit final KMeans on trimmed data
+    trimmed_X = X[mask]
+    trimmed_indices = np.where(mask)[0]
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state).fit(trimmed_X)
+
+    return kmeans, trimmed_indices, np.where(~mask)[0]
+
+
+def plot_k_distance_graph(X, k):
+    """
+    Plot the k-distance graph for DBSCAN parameter tuning.
+    
+    This function computes the distance to the k-th nearest neighbor
+    for each point, sorts them, and plots the values to help identify
+    the 'elbow' point for epsilon.
+    """
+    neigh = NearestNeighbors(n_neighbors=k)
+    neigh.fit(X)
+    distances, _ = neigh.kneighbors(X)
+    distances = np.sort(distances[:, k - 1])
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(distances)
+    plt.xlabel('Points')
+    plt.ylabel(f'{k}-th nearest neighbor distance')
+    plt.title('K-distance Graph')
+    plt.show()
+
+
+def evaluate_clustering(X, y_true, y_pred):
+    """
+    Evaluate clustering performance using ARI, NMI, and Silhouette score.
+    
+    Args:
+        X (ndarray): Feature matrix
+        y_true (array): Ground-truth labels
+        y_pred (array): Predicted cluster labels
+    
+    Returns:
+        dict: Scores for ARI, NMI, and Silhouette
+    """
+    scores = {
+        "ARI": adjusted_rand_score(y_true, y_pred),
+        "NMI": normalized_mutual_info_score(y_true, y_pred),
+        "Silhouette": silhouette_score(X, y_pred),
+    }
+    return scores

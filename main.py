@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.cluster import KMeans
-from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
 from sklearn.datasets import make_spd_matrix
 class CorrelatedClusterGenerator:
@@ -334,26 +333,6 @@ def trimmed_clustering(X, n_clusters, trim_fraction=0.1, max_iter=100, tol=1e-4,
     return kmeans, trimmed_indices, np.where(~mask)[0]
 
 
-def plot_k_distance_graph(X, k):
-    """
-    Plot the k-distance graph for DBSCAN parameter tuning.
-    
-    This function computes the distance to the k-th nearest neighbor
-    for each point, sorts them, and plots the values to help identify
-    the 'elbow' point for epsilon.
-    """
-    neigh = NearestNeighbors(n_neighbors=k)
-    neigh.fit(X)
-    distances, _ = neigh.kneighbors(X)
-    distances = np.sort(distances[:, k - 1])
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(distances)
-    plt.xlabel('Points')
-    plt.ylabel(f'{k}-th nearest neighbor distance')
-    plt.title('K-distance Graph')
-    plt.show()
-
 
 def evaluate_clustering(X, y_true, y_pred):
     """
@@ -373,3 +352,71 @@ def evaluate_clustering(X, y_true, y_pred):
         "Silhouette": silhouette_score(X, y_pred),
     }
     return scores
+
+
+
+def create_cluster_dataset(
+    n_clusters=3,
+    n_samples=10000,
+    n_features=20,
+    cluster_std=1.0,
+    correlation=0.2,
+    separation_factor=3.0,
+    random_state=42,
+    noise_std=0.0,
+    sample_limits=None
+):
+    """
+    Generate a synthetic dataset with correlated clusters and return it as a DataFrame.
+
+    Args:
+        n_clusters (int): number of clusters
+        n_samples (int): total number of data points to generate
+        n_features (int): number of features (dimensions)
+        cluster_std (float or list): standard deviation for clusters (single value or per-cluster list)
+        correlation (float): correlation level between features 
+        separation_factor (float): minimum separation between cluster centers
+        random_state (int): random seed for reproducibility
+        noise_std (float): additional Gaussian noise to add to the dataset
+        sample_limits (dict): subsample size per cluster, 
+                              e.g., {cluster_idx: n_samples_to_keep}
+
+    Returns:
+        pd.DataFrame: dataset with features and a "target" column containing cluster labels
+    """
+
+    # Initialize the generator with the desired parameters
+    gen = CorrelatedClusterGenerator(
+        n_samples=n_samples,
+        n_features=n_features,
+        n_clusters=n_clusters,
+        cluster_std=cluster_std,
+        correlation=correlation,
+        separation_factor=separation_factor,
+        random_state=random_state
+    )
+
+    # Generate samples, labels, and true cluster centers
+    X, y, _ = gen.generate_clusters()
+
+    # Optionally add Gaussian noise to the data
+    if noise_std > 0:
+        X = X + np.random.normal(scale=noise_std, size=X.shape)
+
+    # Optionally subsample specific clusters
+    if sample_limits:
+        X_new, y_new = [], []
+        for cluster_idx, n_keep in sample_limits.items():
+            mask = np.array(y) == cluster_idx
+            X_cluster = X[mask][:n_keep]   # Keep only the first n_keep samples
+            y_cluster = [cluster_idx] * len(X_cluster)
+            X_new.append(X_cluster)
+            y_new.extend(y_cluster)
+        X = np.vstack(X_new)
+        y = np.array(y_new)
+
+    # Build DataFrame with features + target labels
+    df = pd.DataFrame(X, columns=[f"var_{i+1}" for i in range(X.shape[1])])
+    df["target"] = y
+
+    return df

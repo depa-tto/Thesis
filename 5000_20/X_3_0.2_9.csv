@@ -1,0 +1,21 @@
+,ARI,NMI,Silhouette
+k-means,0.905,0.834,0.141
+k-means + pca,0.904,0.832,0.14
+k-means + tsne,0.391,0.424,0.047
+k-means + umap,0.444,0.574,0.053
+trimmed k-means,0.439,0.574,0.068
+trimmed k-means + pca,0.921,0.851,0.144
+trimmed k-means + tsne,0.405,0.442,0.05
+trimmed k-means + umap,0.463,0.631,0.065
+GMM,0.904,0.831,0.14
+GMM + pca,0.444,0.591,0.057
+GMM + tsne,0.34,0.438,0.046
+GMM + umap,0.448,0.577,0.056
+PAM,0.359,0.391,0.056
+PAM + pca,0.905,0.833,0.14
+PAM + tsne,0.401,0.441,0.05
+PAM + umap,0.871,0.79,0.14
+Spectral Clustering,0.882,0.8,0.141
+Spectral Clustering + pca,0.904,0.828,0.14
+Spectral Clustering + tsne,0.369,0.388,0.041
+Spectral Clustering + umap,0.871,0.789,0.14

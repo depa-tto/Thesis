@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
 from sklearn.datasets import make_spd_matrix
+
 class CorrelatedClusterGenerator:
     """
     A generator for synthetic datasets with correlated features and well-separated clusters.
@@ -22,6 +23,7 @@ class CorrelatedClusterGenerator:
         correlation (float): Level of correlation between features (0-1)
         separation_factor (float): Minimum separation between clusters as multiple of std
         random_state (int): Random seed for reproducibility
+        sample_distribution (list): Custom distribution of samples across clusters
     """
     
     def __init__(
@@ -33,6 +35,7 @@ class CorrelatedClusterGenerator:
         correlation=0.5,
         separation_factor=3.0,
         random_state=None,
+        sample_distribution=None,
     ):
         """
         Initialize the correlated cluster generator with specified parameters.
@@ -41,21 +44,26 @@ class CorrelatedClusterGenerator:
             n_samples (int): Total number of data points to generate
             n_features (int): Dimensionality of the feature space
             n_clusters (int): Number of distinct clusters to create
-            cluster_std (float or list): Standard deviation for each cluster.
-                                       If float, same std for all clusters.
-                                       If list, different std for each cluster.
+            cluster_std (float or list): Standard deviation for each cluster. 
+                If float, same std for all clusters. If list, different std for each cluster.
             correlation (float): Base correlation level between features (0.0 to 1.0)
-            separation_factor (float): Minimum distance between cluster centers
-                                     expressed as multiple of standard deviation
+            separation_factor (float): Minimum distance between cluster centers 
+                expressed as multiple of standard deviation
             random_state (int): Seed for random number generator for reproducibility
+            sample_distribution (list or array): Distribution of samples across clusters.
+                Can be:
+                - List of integers: exact number of samples per cluster
+                - List of floats (0-1): percentages that sum to 1.0
+                - None: equal distribution (default behavior)
         """
-        self.n_samples = n_samples                  # Store total number of samples
-        self.n_features = n_features                # Store feature dimensionality
-        self.n_clusters = n_clusters                # Store number of clusters
-        self.cluster_std = cluster_std              # Store standard deviation configuration
-        self.correlation = correlation              # Store correlation level
+        self.n_samples = n_samples  # Store total number of samples
+        self.n_features = n_features  # Store feature dimensionality
+        self.n_clusters = n_clusters  # Store number of clusters
+        self.cluster_std = cluster_std  # Store standard deviation configuration
+        self.correlation = correlation  # Store correlation level
         self.separation_factor = separation_factor  # Store separation factor
-        self.random_state = random_state            # Store random seed
+        self.random_state = random_state  # Store random seed
+        self.sample_distribution = sample_distribution  # Store custom distribution
 
     def generate_clusters(self):
         """
@@ -76,45 +84,45 @@ class CorrelatedClusterGenerator:
         """
         # Set random seed to ensure reproducible results
         np.random.seed(self.random_state)
-
+        
         # Generate cluster centers with controlled separation
         centers = self._generate_separated_centers()
-
+        
         # Initialize lists to store samples and labels for all clusters
         X, y = [], []
         
         # Calculate how many samples each cluster should have
         samples_per_cluster = self._distribute_samples()
-
+        
         # Generate samples for each cluster individually
         for i, (center, n_samples_cluster) in enumerate(
             zip(centers, samples_per_cluster)
         ):
             # Get the standard deviation for this specific cluster
             std = self._get_cluster_std(i)
-
+            
             # Create covariance matrix with desired correlations for this cluster
             cov_matrix = self._generate_covariance_matrix(std)
-
+            
             # Generate multivariate normal samples around the cluster center
             cluster_samples = np.random.multivariate_normal(
-                mean=center,                   # Center point for this cluster
-                cov=cov_matrix,                # Covariance matrix with correlations
-                size=n_samples_cluster         # Number of samples for this cluster
+                mean=center,  # Center point for this cluster
+                cov=cov_matrix,  # Covariance matrix with correlations
+                size=n_samples_cluster  # Number of samples for this cluster
             )
-
+            
             # Add generated samples to the overall dataset
             X.append(cluster_samples)
             # Create labels for this cluster (all samples get label 'i')
             y.append(np.full(n_samples_cluster, i))
-
+        
         # Combine all cluster samples into single arrays
         X = np.vstack(X)  # Stack vertically to create (n_samples, n_features) matrix
         y = np.hstack(y)  # Stack horizontally to create (n_samples,) label vector
-
+        
         # Shuffle the data to avoid any ordering bias in the dataset
         shuffle_idx = np.random.permutation(len(X))
-
+        
         # Return shuffled data, labels, and original cluster centers
         return X[shuffle_idx], y[shuffle_idx], centers
 
@@ -144,13 +152,14 @@ class CorrelatedClusterGenerator:
         This method ensures that clusters are well-separated in the feature space
         by enforcing a minimum distance between any two cluster centers. The minimum
         distance is calculated as separation_factor * maximum_standard_deviation.
-        If cluster centers were generated too close to each other (especially 
-        if the standard deviation was large), the clusters would randomly overlap. 
-        In this case, any clustering algorithm would fail, and you wouldn't know whether
-        the failure was due to the algorithm itself or poor data quality.
-
-        With Guarantee: By ensuring a minimum distance we are defining a clear ground truth. 
-        ensuring thar the clusters are separable in high dimension
+        
+        If cluster centers were generated too close to each other (especially if the 
+        standard deviation was large), the clusters would randomly overlap. In this case, 
+        any clustering algorithm would fail, and you wouldn't know whether the failure 
+        was due to the algorithm itself or poor data quality.
+        
+        With Guarantee: By ensuring a minimum distance we are defining a clear ground truth,
+        ensuring that the clusters are separable in high dimension.
         
         Returns:
             ndarray: Array of cluster centers with shape (n_clusters, n_features)
@@ -159,12 +168,13 @@ class CorrelatedClusterGenerator:
         if isinstance(self.cluster_std, (list, np.ndarray)):
             max_std = max(self.cluster_std)  # Find maximum if multiple std values
         else:
-            max_std = self.cluster_std       # Use single value if uniform std
-
+            max_std = self.cluster_std  # Use single value if uniform std
+        
         # Calculate minimum required distance between cluster centers
         min_distance = self.separation_factor * max_std
+        
         centers = []  # List to store generated centers
-
+        
         # Generate centers one by one, ensuring proper separation
         for _ in range(self.n_clusters):
             attempts = 0  # Counter to avoid infinite loops
@@ -173,12 +183,12 @@ class CorrelatedClusterGenerator:
             while attempts < 1000:  # Maximum attempts to prevent infinite loops
                 # Generate random center coordinates in range [-10, 10]
                 center = np.random.uniform(-10, 10, self.n_features)
-
+                
                 # If this is the first center, accept it immediately
                 if len(centers) == 0:
                     centers.append(center)
                     break
-
+                
                 # Calculate distances from this center to all existing centers
                 distances = [np.linalg.norm(center - c) for c in centers]
                 
@@ -186,9 +196,9 @@ class CorrelatedClusterGenerator:
                 if min(distances) >= min_distance:
                     centers.append(center)  # Accept this center
                     break
-                    
+                
                 attempts += 1  # Increment attempt counter
-
+        
         # Convert list to numpy array and return
         return np.array(centers)
 
@@ -210,15 +220,14 @@ class CorrelatedClusterGenerator:
         Returns:
             ndarray: Covariance matrix of shape (n_features, n_features)
         """
-
         try:
             # Generate a random positive semi-definite matrix
             # This guarantees the matrix will be mathematically valid
             base_cov = make_spd_matrix(
-                n_dim=self.n_features,          # Dimensionality of the matrix
+                n_dim=self.n_features,  # Dimensionality of the matrix
                 random_state=self.random_state  # Use same random seed for reproducibility
             )
-
+            
             # Normalize the matrix to extract correlation structure
             # First, get the square root of diagonal elements (standard deviations)
             diag_sqrt = np.sqrt(np.diag(base_cov))
@@ -226,62 +235,100 @@ class CorrelatedClusterGenerator:
             # Convert covariance matrix to correlation matrix
             # by dividing by outer product of standard deviations
             corr_matrix = base_cov / np.outer(diag_sqrt, diag_sqrt)
-
+            
             # Determine the correlation scaling factor
             if isinstance(self.correlation, (int, float)):
-                corr_factor = self.correlation           # Use single correlation value
+                corr_factor = self.correlation  # Use single correlation value
             else:
                 corr_factor = np.mean(self.correlation)  # Use average if range given
-
+            
             # Scale the off-diagonal correlations to desired level
             # Formula: scaled_corr = I + corr_factor * (original_corr - I)
             # This preserves the identity matrix (diagonal = 1) while scaling correlations
             scaled_corr = (
                 corr_matrix - np.eye(self.n_features)  # Remove identity matrix
-            ) * corr_factor + np.eye(self.n_features)   # Scale and add back identity
-
+            ) * corr_factor + np.eye(self.n_features)  # Scale and add back identity
+            
             # Convert correlation matrix back to covariance matrix
             # by scaling with the desired standard deviation
             final_cov = scaled_corr * (std**2)
-
+            
             return final_cov
-
+            
         except (ImportError, ValueError, np.linalg.LinAlgError) as e:
             # Fallback strategy if the sophisticated method fails
             # Print warning message with error details
             print(f"Warning: Using diagonal covariance matrix for std={std}. Error: {e}")
-            
             # Return simple diagonal covariance matrix (no correlations)
             return np.eye(self.n_features) * (std ** 2)
 
     def _distribute_samples(self):
         """
-        Distribute the total number of samples among clusters as evenly as possible.
+        Distribute the total number of samples among clusters.
         
-        This method handles the case where n_samples is not perfectly divisible
-        by n_clusters. It ensures that:
-        1. All samples are assigned to clusters
-        2. Distribution is as even as possible
-        3. Any remaining samples are distributed to the first clusters
+        This method supports three modes:
+        1. Custom percentages: list of floats (0-1) that sum to 1.0
+        2. Exact counts: list of integers that sum to n_samples
+        3. Equal distribution (default): when sample_distribution is None
         
         Returns:
             list: Number of samples for each cluster
         """
-        # Calculate base number of samples per cluster (integer division)
-        base_samples = self.n_samples // self.n_clusters
+        if self.sample_distribution is None:
+            # Default: equal distribution as evenly as possible
+            # Calculate base number of samples per cluster (integer division)
+            base_samples = self.n_samples // self.n_clusters
+            # Calculate remaining samples that couldn't be evenly distributed
+            remainder = self.n_samples % self.n_clusters
+            
+            # Start with base number of samples for each cluster
+            samples_per_cluster = [base_samples] * self.n_clusters
+            
+            # Distribute remaining samples to the first 'remainder' clusters
+            # This ensures total samples equals n_samples exactly
+            for i in range(remainder):
+                samples_per_cluster[i] += 1  # Add one extra sample to cluster i
+            
+            return samples_per_cluster
         
-        # Calculate remaining samples that couldn't be evenly distributed
-        remainder = self.n_samples % self.n_clusters
-
-        # Start with base number of samples for each cluster
-        samples_per_cluster = [base_samples] * self.n_clusters
-
-        # Distribute remaining samples to the first 'remainder' clusters
-        # This ensures total samples equals n_samples exactly
-        for i in range(remainder):
-            samples_per_cluster[i] += 1  # Add one extra sample to cluster i
-
-        return samples_per_cluster
+        # Check if percentages (floats between 0 and 1)
+        if all(isinstance(x, float) and 0 <= x <= 1 for x in self.sample_distribution):
+            # Validate that percentages sum to 1.0 (with tolerance)
+            total = sum(self.sample_distribution)
+            if not np.isclose(total, 1.0, atol=1e-6):
+                raise ValueError(
+                    f"Sample distribution percentages must sum to 1.0, got {total}"
+                )
+            
+            # Convert percentages to actual sample counts
+            samples_per_cluster = [
+                int(self.n_samples * pct) for pct in self.sample_distribution
+            ]
+            
+            # Adjust for rounding errors
+            total_assigned = sum(samples_per_cluster)
+            diff = self.n_samples - total_assigned
+            
+            # Add remaining samples to clusters with largest remainders
+            if diff > 0:
+                remainders = [
+                    (self.n_samples * pct) - int(self.n_samples * pct)
+                    for pct in self.sample_distribution
+                ]
+                sorted_indices = np.argsort(remainders)[::-1]
+                for i in range(diff):
+                    samples_per_cluster[sorted_indices[i]] += 1
+            
+            return samples_per_cluster
+        
+        # Assume exact counts provided
+        if sum(self.sample_distribution) != self.n_samples:
+            raise ValueError(
+                f"Sample distribution counts must sum to n_samples ({self.n_samples}), "
+                f"got {sum(self.sample_distribution)}"
+            )
+        
+        return list(self.sample_distribution)
 
 
 def trimmed_clustering(X, n_clusters, trim_fraction=0.1, max_iter=100, tol=1e-4, random_state=42):
@@ -292,22 +339,22 @@ def trimmed_clustering(X, n_clusters, trim_fraction=0.1, max_iter=100, tol=1e-4,
     discards a fraction of farthest points as outliers, and updates the centroids.
     """
     rng = np.random.default_rng(random_state)
-
+    
     # Random initialization of cluster centers
     init_idx = rng.choice(len(X), size=n_clusters, replace=False)
     centroids = X[init_idx]
     prev_centroids = None
-
+    
     for _ in range(max_iter):
         # Compute distances to centroids
         distances = np.linalg.norm(X[:, None] - centroids[None, :], axis=2)
         labels = np.argmin(distances, axis=1)
         min_distances = distances[np.arange(len(X)), labels]
-
+        
         # Identify points to trim (outliers)
         threshold = np.percentile(min_distances, 100 * (1 - trim_fraction))
         mask = min_distances <= threshold
-
+        
         # Update centroids using only trimmed points
         new_centroids = []
         for k in range(n_clusters):
@@ -317,21 +364,20 @@ def trimmed_clustering(X, n_clusters, trim_fraction=0.1, max_iter=100, tol=1e-4,
             else:
                 new_centroids.append(X[rng.choice(len(X))])
         new_centroids = np.vstack(new_centroids)
-
+        
         # Check convergence
         if prev_centroids is not None and np.allclose(new_centroids, prev_centroids, atol=tol):
             break
-
+        
         prev_centroids = centroids
         centroids = new_centroids
-
+    
     # Fit final KMeans on trimmed data
     trimmed_X = X[mask]
     trimmed_indices = np.where(mask)[0]
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state).fit(trimmed_X)
-
+    
     return kmeans, trimmed_indices, np.where(~mask)[0]
-
 
 
 def evaluate_clustering(X, y_true, y_pred):
@@ -342,7 +388,7 @@ def evaluate_clustering(X, y_true, y_pred):
         X (ndarray): Feature matrix
         y_true (array): Ground-truth labels
         y_pred (array): Predicted cluster labels
-    
+        
     Returns:
         dict: Scores for ARI, NMI, and Silhouette
     """
@@ -354,7 +400,6 @@ def evaluate_clustering(X, y_true, y_pred):
     return scores
 
 
-
 def create_cluster_dataset(
     n_clusters=3,
     n_samples=10000,
@@ -364,27 +409,31 @@ def create_cluster_dataset(
     separation_factor=3.0,
     random_state=42,
     noise_std=0.0,
-    sample_limits=None
+    sample_distribution=None,
 ):
     """
     Generate a synthetic dataset with correlated clusters and return it as a DataFrame.
-
+    
     Args:
         n_clusters (int): number of clusters
         n_samples (int): total number of data points to generate
         n_features (int): number of features (dimensions)
-        cluster_std (float or list): standard deviation for clusters (single value or per-cluster list)
-        correlation (float): correlation level between features 
+        cluster_std (float or list): standard deviation for clusters 
+            (single value or per-cluster list)
+        correlation (float): correlation level between features
         separation_factor (float): minimum separation between cluster centers
         random_state (int): random seed for reproducibility
         noise_std (float): additional Gaussian noise to add to the dataset
-        sample_limits (dict): subsample size per cluster, 
-                              e.g., {cluster_idx: n_samples_to_keep}
-
+        sample_distribution (list): Distribution of samples across clusters.
+            - List of floats (0-1): percentages (must sum to 1.0)
+              Example: [0.5, 0.3, 0.2] for 50%, 30%, 20%
+            - List of integers: exact counts (must sum to n_samples)
+              Example: [5000, 3000, 2000] for 10000 total samples
+            - None: equal distribution (default)
+    
     Returns:
         pd.DataFrame: dataset with features and a "target" column containing cluster labels
     """
-
     # Initialize the generator with the desired parameters
     gen = CorrelatedClusterGenerator(
         n_samples=n_samples,
@@ -393,30 +442,19 @@ def create_cluster_dataset(
         cluster_std=cluster_std,
         correlation=correlation,
         separation_factor=separation_factor,
-        random_state=random_state
+        random_state=random_state,
+        sample_distribution=sample_distribution,
     )
-
+    
     # Generate samples, labels, and true cluster centers
     X, y, _ = gen.generate_clusters()
-
+    
     # Optionally add Gaussian noise to the data
     if noise_std > 0:
         X = X + np.random.normal(scale=noise_std, size=X.shape)
-
-    # Optionally subsample specific clusters
-    if sample_limits:
-        X_new, y_new = [], []
-        for cluster_idx, n_keep in sample_limits.items():
-            mask = np.array(y) == cluster_idx
-            X_cluster = X[mask][:n_keep]   # Keep only the first n_keep samples
-            y_cluster = [cluster_idx] * len(X_cluster)
-            X_new.append(X_cluster)
-            y_new.extend(y_cluster)
-        X = np.vstack(X_new)
-        y = np.array(y_new)
-
+    
     # Build DataFrame with features + target labels
     df = pd.DataFrame(X, columns=[f"var_{i+1}" for i in range(X.shape[1])])
     df["target"] = y
-
+    
     return df

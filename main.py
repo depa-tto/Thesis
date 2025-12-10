@@ -1,7 +1,7 @@
-import numpy as np
-import pandas as pd
-from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score
-from sklearn.datasets import make_spd_matrix
+import numpy as np # type:ignore
+import pandas as pd # type:ignore
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, silhouette_score # type:ignore
+from sklearn.datasets import make_spd_matrix # type:ignore
 
 class CorrelatedClusterGenerator:
     """

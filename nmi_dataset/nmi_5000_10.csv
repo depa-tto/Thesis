@@ -1,6 +1,6 @@
 Observations and Features:,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features,5000 observations and 10 features
 Number of Clusters:,3 clusters,3 clusters,3 clusters,5 clusters,5 clusters,5 clusters,7 clusters,7 clusters,7 clusters
-Correlation and Noise:,0.1 and 20,0.5 and 15,0.9 and 10,0.1 and 20,0.5 and 15,0.9 and 10,0.1 and 20,0.5 and 15,0.9 and 10
+Correlation and Noise:,0.1 and 5,0.5 and 7,0.9 and 9,0.1 and 5,0.5 and 7,0.9 and 9,0.1 and 5,0.5 and 7,0.9 and 9
 k-means,0.663,0.502,0.373,0.579,0.423,0.335,0.67,0.453,0.298
 k-means + pca,0.651,0.49,0.363,0.574,0.371,0.291,0.518,0.375,0.264
 k-means + tsne,0.486,0.362,0.237,0.521,0.338,0.226,0.552,0.321,0.236

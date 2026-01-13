@@ -1,0 +1,21 @@
+,ARI,NMI,Silhouette
+k-means,0.19,0.27,0.145
+k-means + pca,0.15,0.255,0.325
+k-means + tsne,0.186,0.27,0.369
+k-means + umap,0.187,0.268,0.282
+Birch,0.137,0.237,0.084
+Birch + pca,0.215,0.264,0.333
+Birch + tsne,0.164,0.248,0.321
+Birch + umap,0.175,0.269,0.265
+GMM,0.171,0.231,0.099
+GMM + pca,0.195,0.252,0.269
+GMM + tsne,0.138,0.247,0.323
+GMM + umap,0.165,0.25,0.229
+PAM,0.19,0.268,0.136
+PAM + pca,0.162,0.259,0.313
+PAM + tsne,0.186,0.269,0.37
+PAM + umap,0.187,0.276,0.29
+Spectral Clustering,0.184,0.263,0.143
+Spectral Clustering + pca,0.153,0.25,0.296
+Spectral Clustering + tsne,0.152,0.256,0.192
+Spectral Clustering + umap,0.166,0.265,0.274

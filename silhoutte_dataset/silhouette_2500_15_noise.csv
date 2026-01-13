@@ -1,0 +1,23 @@
+Observations and Features:,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features,2500 observations and 15 features
+Number of Clusters:,3 clusters,3 clusters,3 clusters,5 clusters,5 clusters,5 clusters,7 clusters,7 clusters,7 clusters
+Correlation and Noise:,5,7,9,5,7,9,5,7,9
+k-means,0.211,0.154,0.116,0.154,0.13,0.09,0.164,0.111,0.081
+k-means + pca,0.472,0.298,0.288,0.381,0.278,0.235,0.294,0.227,0.186
+k-means + tsne,0.576,0.483,0.427,0.477,0.437,0.392,0.529,0.422,0.375
+k-means + umap,0.802,0.627,0.494,0.748,0.565,0.367,0.604,0.393,0.33
+Birch,0.205,0.147,0.098,0.184,0.098,0.07,0.159,0.077,0.042
+Birch + pca,0.472,0.396,0.27,0.329,0.253,0.195,0.241,0.18,0.12
+Birch + tsne,0.57,0.47,0.389,0.468,0.413,0.314,0.497,0.344,0.304
+Birch + umap,0.802,0.627,0.494,0.736,0.583,0.456,0.722,0.481,0.398
+GMM,0.21,0.153,0.072,0.1,0.048,0.052,0.085,0.064,0.015
+GMM + pca,0.472,0.403,0.248,0.374,0.207,0.178,0.228,0.154,0.147
+GMM + tsne,0.576,0.472,0.395,0.46,0.407,0.367,0.487,0.406,0.321
+GMM + umap,0.802,0.627,0.494,0.748,0.561,0.354,0.591,0.386,0.261
+PAM,0.226,0.11,0.088,0.201,0.095,0.051,0.136,0.076,0.038
+PAM + pca,0.472,0.404,0.288,0.334,0.257,0.223,0.292,0.223,0.179
+PAM + tsne,0.576,0.484,0.429,0.477,0.436,0.388,0.53,0.425,0.375
+PAM + umap,0.802,0.627,0.494,0.748,0.415,0.432,0.602,0.451,0.345
+Spectral Clustering,0.211,0.153,0.114,0.19,0.127,0.089,0.188,0.116,0.078
+Spectral Clustering + pca,0.472,0.405,0.286,0.379,0.298,0.244,0.291,0.221,0.177
+Spectral Clustering + tsne,0.576,0.479,0.421,0.565,0.389,0.366,0.563,0.403,0.348
+Spectral Clustering + umap,0.361,0.627,0.494,0.747,0.562,0.416,0.429,0.442,0.312
